@@ -100,6 +100,14 @@ app.post('/api/sendText', async (req, res) => {
     const apiKey = req.headers['x-api-key'];
     if (apiKey !== process.env.API_KEY) return res.status(401).send('Unauthorized');
 
+    // Prevent crashing if n8n hits the endpoint before the client is fully initialized
+    if (!isConnected || !client.pupPage || client.pupPage.isClosed()) {
+        return res.status(503).json({ 
+            success: false, 
+            error: "WhatsApp sync engine is currently warming up or disconnected. Please try again in a few seconds." 
+        });
+    }
+
     const { chatId, text } = req.body;
     try {
         await client.sendMessage(chatId, text);
